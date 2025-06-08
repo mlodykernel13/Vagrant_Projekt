@@ -25,6 +25,7 @@ sudo snap install ngrok
 ```
 Potrzebny jest token od ngrok, który można uzyskac rejestrując się/logując na https://ngrok.com
 Token znajdzuje się pod zakładką dashboard https://dashboard.ngrok.com/get-started/your-authtoken
+
 Dodanie tokenu
 ```bash
 ngrok config add-authtoken <TOKEN>
