@@ -4,15 +4,17 @@ import os
 
 c = get_config()
 
-# Konfiguracja adresów i portów
+# konfiguracja adresów i portów
 c.JupyterHub.bind_url = 'http://0.0.0.0:8000'
 c.JupyterHub.hub_ip = 'jupyterhub'
 c.JupyterHub.hub_port = 8081
 c.JupyterHub.cookie_secret_file = '/data/jupyterhub_cookie_secret'
 c.JupyterHub.db_url = 'sqlite:////data/jupyterhub.sqlite'
 
-# 🔒 Publiczny adres z ngroka - DOPASUJ!
+# --------- publiczny adres z ngroka------------
 c.JupyterHub.external_url = 'https://22f0-185-13-184-55.ngrok-free.app/hub/'  # <- ZMIEŃ TO!
+# --------- publiczny adres z ngroka------------
+
 
 # Zaufanie do nagłówków reverse proxy (ngrok)
 c.JupyterHub.trust_xheaders = True
