@@ -34,4 +34,4 @@ Uruchomienie ngroka
 ```bash
 ngrok http 8000
 ```
-Usługa znajduje się pod podanym linkiem (https://xxxxxxxxxxxxxxx.ngrok-free.app)
+Usługa znajduje się pod wygenerowanym przez ngroka linkiem (np. https://xxxxxxxxxxxxxxx.ngrok-free.app)
