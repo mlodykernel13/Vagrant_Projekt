@@ -1,20 +1,13 @@
-# Dockerfile for JupyterLab
-# Jupyterhub version: 3.1.1
-
 FROM jupyter/datascience-notebook:hub-3.1.1
 
-# JupyterHub Version
-ARG JUPYTERHUB_VERSION=3.1.1
-
 USER root
-RUN apt-get update && \
-    apt-get install -y gnuplot octave && \
-    apt-get clean
 
-# Install packages
-RUN pip3 install --no-cache \
-    jupyterlab-language-pack-pl-PL \
-    octave_kernel && \
-    export OCTAVE_EXECUTABLE=$(which octave)
+RUN groupadd nauczyciele && \
+    useradd -m -s /bin/bash -G nauczyciele nauczyciel1 && \
+    useradd -m -s /bin/bash student1 && \
+    mkdir -p /home/shared && \
+    chown root:nauczyciele /home/shared && \
+    chmod 775 /home/shared && \
+    pip install jupyterlab-language-pack-pl-PL octave_kernel
 
 USER jovyan

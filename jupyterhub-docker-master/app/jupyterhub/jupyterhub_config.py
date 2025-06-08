@@ -1,78 +1,60 @@
-#Configuration file for JupyterHub
-
-# JupyterHub version: 3.1.1
-# Dockerspawner version: 12.1.0
-# JupyterHub CAS Authenticator version: 1.0.2
-
-import os
-import sys
 from dockerspawner import DockerSpawner
+from jupyterhub.auth import DummyAuthenticator
+import os
 
 c = get_config()
 
+# Konfiguracja adresów i portów
 c.JupyterHub.bind_url = 'http://0.0.0.0:8000'
+c.JupyterHub.hub_ip = 'jupyterhub'
+c.JupyterHub.hub_port = 8081
+c.JupyterHub.cookie_secret_file = '/data/jupyterhub_cookie_secret'
+c.JupyterHub.db_url = 'sqlite:////data/jupyterhub.sqlite'
 
-c.JupyterHub.active_server_limit = int(os.environ.get("ACTIVE_SERVER_LIMIT", 100))
-c.JupyterHub.activity_resolution = int(os.environ.get("ACTIVITY_RESOLUTION", 300))
-c.DockerSpawner.mem_limit = os.environ.get("MEM_LIMIT", "1G")
-c.DockerSpawner.cpu_limit = int(os.environ.get("CPU_LIMIT", 1))
-c.DockerSpawner.image = os.environ.get("DOCKER_NOTEBOOK_IMAGE", "notebook_img")
-c.DockerSpawner.cmd = os.environ.get("DOCKER_SPAWN_CMD", "start-singleuser.sh")
-c.DockerSpawner.use_internal_ip = True
-c.DockerSpawner.network_name = os.environ.get("DOCKER_NETWORK_NAME")
-c.DockerSpawner.remove = True # Remove containers once they are stopped
-c.DockerSpawner.debug = True # For debugging arguments passed to spawned containers
-c.JupyterHub.hub_ip = "jupyterhub" # User containers will access hub by container name on the Docker network
-c.JupyterHub.hub_port = 9090
-c.JupyterHub.cookie_secret_file = "/data/jupyterhub_cookie_secret" # Persist hub data on volume mounted inside container
-c.JupyterHub.db_url = "sqlite:////data/jupyterhub.sqlite"
+# 🔒 Publiczny adres z ngroka - DOPASUJ!
+c.JupyterHub.external_url = 'https://22f0-185-13-184-55.ngrok-free.app/hub/'  # <- ZMIEŃ TO!
 
-notebook_dir = os.environ.get("DOCKER_NOTEBOOK_DIR", "/home/jovyan")
-c.DockerSpawner.notebook_dir = notebook_dir
+# Zaufanie do nagłówków reverse proxy (ngrok)
+c.JupyterHub.trust_xheaders = True
 
-c.DockerSpawner.volumes = {"jupyterhub-user-{username}": notebook_dir}
-c.JupyterHub.spawner_class = "dockerspawner.DockerSpawner"
+# Konfiguracja Dockera
+c.JupyterHub.spawner_class = DockerSpawner
+c.DockerSpawner.image = 'notebook_img'
+c.DockerSpawner.remove = True
+c.DockerSpawner.debug = True
+c.DockerSpawner.network_name = os.environ.get("DOCKER_NETWORK_NAME", "jupyterhub_default")
 
-debug = os.environ.get("DEBUG", "False")
-if debug == "True":
-    c.Authenticator.admin_users = {"173137@stud.prz.edu.pl"}
-    c.JupyterHub.authenticator_class = "dummy"
-    c.DockerSpawner.debug = True
-else:
-    c.Authenticator.admin_users = {"admin"} # this line needs to be modified in configuration
-    c.JupyterHub.authenticator_class = 'jhub_cas_authenticator.cas_auth.CASAuthenticator'
-    c.CASAuthenticator.cas_login_url = 'https://cas.prz.edu.pl/cas-server/login'
-    c.CASAuthenticator.cas_logout_url = 'https://cas.prz.edu.pl/cas-server/logout'
-    c.CASAuthenticator.cas_service_url = 'https://%s/hub/login' % os.environ['HOST']
-    c.CASAuthenticator.cas_service_validate_url = 'https://cas.prz.edu.pl/cas-server/serviceValidate'
-    #c.CASAuthenticator.cas_required_attribs = {('memberOf', 'jupyterhub_users')}
+# DummyAuthenticator
+c.JupyterHub.authenticator_class = DummyAuthenticator
+c.Authenticator.admin_users = {'admin'}
+c.Authenticator.allowed_users = {'admin', '173137'}
+c.DummyAuthenticator.password = 'test'
 
+# Hooki i katalogi
+notebook_dir = '/home/jovyan/work'
+shared_dir = '/home/jovyan/shared'
+teacher_users = {'admin'}
 
-## ----------------------------------------
-# JupyterHub Idle Culler
-# adapted config from GitHub jupyterhub/jupyterhub-idle-culler
-c.JupyterHub.load_roles = [
-    {
-        "name": "jupyterhub-idle-culler-role",
-        "scopes": [
-            "list:users",
-            "read:users:activity",
-            "read:servers",
-            "delete:servers",
-            # "admin:users", # if using --cull-users
-        ],
-        # assignment of role's permissions to:
-        "services": ["jupyterhub-idle-culler-service"],
+def pre_spawn_hook(spawner):
+    username = spawner.user.name
+    role = 'teacher' if username in teacher_users else 'student'
+
+    user_volume = f'jupyterhub-user-{username}'
+
+    spawner.volumes = {
+        user_volume: notebook_dir,
+        "jupyterhub-shared": {
+            "bind": shared_dir,
+            "mode": "ro" if role == "student" else "rw"
+        }
     }
-]
 
-c.JupyterHub.services = [
-    {
-        "name": "jupyterhub-idle-culler-service",
-        "command": [
-            sys.executable,
-            "-m", "jupyterhub_idle_culler",
-            "--timeout={0}".format(os.environ.get("JUPYTERHUB_IDLE_CULLER_TIMEOUT", "3600")),
-        ],
-    }
-]
+    def create_symlink_hook(spawner):
+        link_path = os.path.join(notebook_dir, "shared")
+        if not os.path.exists(link_path):
+            os.symlink(shared_dir, link_path)
+
+    spawner.post_spawn_hook = create_symlink_hook
+
+c.Spawner.pre_spawn_hook = pre_spawn_hook
+c.Spawner.default_url = '/lab'
