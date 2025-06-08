@@ -1,4 +1,4 @@
-#JupyterHub na Vagrant z Dockerem
+# JupyterHub na Vagrant z Dockerem
 
 ## Wymagane programy
 
@@ -14,6 +14,7 @@ Po uruchomieniu maszyny
 ```bash
 vagrant ssh
 ```
+Po połączeniu się z maszyną
 ```bash
 cd /vagrant/jupyterhub-docker-master
 docker-compose up -d
