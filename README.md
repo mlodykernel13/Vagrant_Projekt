@@ -14,12 +14,8 @@ Po uruchomieniu maszyny
 ```bash
 vagrant ssh
 ```
-Po połączeniu się z maszyną
-```bash
-cd /vagrant/jupyterhub-docker-master
-docker-compose up -d
-```
-Po zbudowaniu kontenerów
+
+## Konfiguracja ngroka
 ```bash
 sudo snap install ngrok
 ```
@@ -30,8 +26,15 @@ Dodanie tokenu
 ```bash
 ngrok config add-authtoken <TOKEN>
 ```
+Zbudowanie kontenerów
+
+```bash
+cd /vagrant/jupyterhub-docker-master
+docker-compose up -d
+```
+
 Uruchomienie ngroka
 ```bash
 ngrok http 8000
 ```
-Usługa znajduje się pod wygenerowanym przez ngroka linkiem (np. https://xxxxxxxxxxxxxxx.ngrok-free.app)
+## Usługa znajduje się pod wygenerowanym przez ngroka linkiem (np. https://xxxxxxxxxxxxxxx.ngrok-free.app)
